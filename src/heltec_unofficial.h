@@ -179,6 +179,7 @@ void heltec_led(int percent) {
       if (heltec_ledc_attached)
       {
       ledcDetach(LED_PIN);
+      heltec_ledc_attached = false;
       }
     #else
       ledcDetachPin(LED_PIN);
