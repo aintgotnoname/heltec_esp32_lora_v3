@@ -11,6 +11,8 @@
 #ifndef heltec_h
 #define heltec_h
 
+#include "heltec_unofficial_api.h"
+
 #if ESP_ARDUINO_VERSION_MAJOR >= 3
   #include "driver/temperature_sensor.h"
 #else
@@ -32,18 +34,24 @@
 #define VBAT_CTRL GPIO_NUM_37
 #define VBAT_ADC  GPIO_NUM_1
 // SPI pins
+#ifndef PLATFORMIO
 #define SS        GPIO_NUM_8
 #define MOSI      GPIO_NUM_10
 #define MISO      GPIO_NUM_11
 #define SCK       GPIO_NUM_9
+#endif
 // Radio pins
 #define DIO1      GPIO_NUM_14
+#ifndef PLATFORMIO
 #define RST_LoRa  GPIO_NUM_12
 #define BUSY_LoRa GPIO_NUM_13
+#endif
 // Display pins
+#ifndef PLATFORMIO
 #define SDA_OLED  GPIO_NUM_17
 #define SCL_OLED  GPIO_NUM_18
 #define RST_OLED  GPIO_NUM_21
+#endif
 
 #ifdef HELTEC_WIRELESS_STICK_LITE
   #define HELTEC_NO_DISPLAY
@@ -114,6 +122,7 @@ const uint8_t scaled_voltage[100] = {
    * different Print objects. It overrides the write() function to write the data
    * to both Print objects.
    */
+#ifndef PLATFORMIO
   class PrintSplitter : public Print {
     public:
       PrintSplitter(Print &_a, Print &_b) : a(_a), b(_b) {}
@@ -129,6 +138,7 @@ const uint8_t scaled_voltage[100] = {
       Print &a;
       Print &b;
   };
+#endif
 
   #ifdef HELTEC_WIRELESS_STICK
     #define DISPLAY_GEOMETRY GEOMETRY_64_32
@@ -153,10 +163,12 @@ HotButton button(BUTTON);
  * @param percent The brightness percentage of the LED (0-100).
  */
 void heltec_led(int percent) {
+  static bool heltec_ledc_attached = false;
   if (percent > 0) {
     #if ESP_ARDUINO_VERSION_MAJOR >= 3
       ledcAttach(LED_PIN, LED_FREQ, LED_RES);
       ledcWrite(LED_PIN, percent * 255 / 100);
+      heltec_ledc_attached = true;
     #else
       ledcSetup(LED_CHAN, LED_FREQ, LED_RES);
       ledcAttachPin(LED_PIN, LED_CHAN);
@@ -164,7 +176,10 @@ void heltec_led(int percent) {
     #endif
   } else {
     #if ESP_ARDUINO_VERSION_MAJOR >= 3
+      if (heltec_ledc_attached)
+      {
       ledcDetach(LED_PIN);
+      }
     #else
       ledcDetachPin(LED_PIN);
     #endif
@@ -212,16 +227,14 @@ float heltec_vbat() {
 }
 
 /**
- * @brief Puts the device into deep sleep mode.
+ * @brief Prepares the device into deep sleep mode.
  *
  * This function prepares the device for deep sleep mode by disconnecting from
  * WiFi, turning off the display, disabling external power, and turning off the
- * LED. It can also be configured to wake up after a certain number of seconds
- * using the optional parameter.
- *
- * @param seconds The number of seconds to sleep before waking up (default = 0).
+ * LED. 
  */
-void heltec_deep_sleep(int seconds = 0) {
+void heltec_deep_sleep_prepare()
+{
   #ifdef WiFi_h
     WiFi.disconnect(true);
   #endif
@@ -258,12 +271,40 @@ void heltec_deep_sleep(int seconds = 0) {
     esp_sleep_enable_ext0_wakeup(BUTTON, LOW);
     button.waitForRelease();
   #endif
+}
+
+/**
+ * @brief Puts the device into deep sleep mode.
+ *
+ * This function puts the device for deep sleep mode. It can also be configured 
+ * to wake up after a certain number of microseconds using the optional parameter.
+ *
+ * @param seconds The number of micro seconds to sleep before waking up (default = 0).
+ */
+void heltec_high_res_deep_sleep(int64_t time_in_microseconds /*= 0*/) {
+
   // Set timer wakeup if applicable
-  if (seconds > 0) {
-    esp_sleep_enable_timer_wakeup((int64_t)seconds * 1000000);
+  if (time_in_microseconds > 0) {
+    esp_sleep_enable_timer_wakeup(time_in_microseconds);
   }
   // and off to bed we go
   esp_deep_sleep_start();
+}
+
+/**
+ * @brief Puts the device into deep sleep mode.
+ *
+ * This function prepares the device for deep sleep mode by disconnecting from
+ * WiFi, turning off the display, disabling external power, and turning off the
+ * LED. It can also be configured to wake up after a certain number of seconds
+ * using the optional parameter.
+ *
+ * @param seconds The number of seconds to sleep before waking up (default = 0).
+ */
+void heltec_deep_sleep(int seconds /*= 0*/) {
+  heltec_deep_sleep_prepare();
+  // Set timer wakeup if applicable
+  heltec_high_res_deep_sleep((int64_t)seconds*1000000);
 }
 
 /**
@@ -278,7 +319,7 @@ void heltec_deep_sleep(int seconds = 0) {
  * @param vbat The battery voltage in volts (default = -1).
  * @return The battery percentage (0-100).
  */
-int heltec_battery_percent(float vbat = -1) {
+int heltec_battery_percent(float vbat /*= -1*/) {
   if (vbat == -1) {
     vbat = heltec_vbat();
   }
