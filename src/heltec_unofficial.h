@@ -220,7 +220,9 @@ void heltec_ve(bool state) {
 float heltec_vbat() {
   pinMode(VBAT_CTRL, OUTPUT);
   digitalWrite(VBAT_CTRL, LOW);
+  pinMode(VBAT_ADC, ANALOG);
   delay(5);
+
   float vbat = analogRead(VBAT_ADC) / 238.7;
   // pulled up, no need to drive it
   pinMode(VBAT_CTRL, INPUT);
