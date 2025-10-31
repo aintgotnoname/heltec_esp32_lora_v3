@@ -312,7 +312,7 @@ float heltec_temperature() {
 void heltec_display_power(bool on) {
   #ifndef HELTEC_NO_DISPLAY_INSTANCE
     if (on) {
-      #ifdef HELTEC_WIRELESS_STICK
+      #ifdef ARDUINO_heltec_wireless_stick_v3
         // They hooked the display to "external" power, and didn't tell anyone
         heltec_ve(true);
         delay(5);
@@ -324,7 +324,7 @@ void heltec_display_power(bool on) {
       delay(20);
       digitalWrite(RST_OLED, HIGH);
     } else {
-      #ifdef HELTEC_WIRELESS_STICK
+      #ifdef ARDUINO_heltec_wireless_stick_v3
         heltec_ve(false);
       #else
         display.displayOff();
@@ -341,15 +341,17 @@ void heltec_display_power(bool on) {
  */
 void heltec_setup() {
   Serial.begin(115200);
-  #ifndef ARDUINO_heltec_wifi_32_lora_V3
+  #if defined ARDUINO_heltec_wifi_32_lora_V3  ||  defined ARDUINO_heltec_wireless_stick_v3
+    #ifndef HELTEC_NO_DISPLAY_INSTANCE
+      heltec_display_power(true);
+      display.init();
+      display.setContrast(255);
+      display.flipScreenVertically();
+    #endif
+  #else
     hspi->begin(SCK, MISO, MOSI, SS);
   #endif
-  #ifndef HELTEC_NO_DISPLAY_INSTANCE
-    heltec_display_power(true);
-    display.init();
-    display.setContrast(255);
-    display.flipScreenVertically();
-  #endif
+
 }
 
 /**
