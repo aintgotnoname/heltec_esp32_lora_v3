@@ -101,7 +101,7 @@
       Print &b;
   };
 
-  #ifdef HELTEC_WIRELESS_STICK
+  #ifdef ARDUINO_heltec_wireless_stick_v3
     #define DISPLAY_GEOMETRY GEOMETRY_64_32
   #else
     #define DISPLAY_GEOMETRY GEOMETRY_128_64
