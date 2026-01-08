@@ -112,7 +112,7 @@
   Print &both = Serial;
 #endif
 
-extern HotButton button;
+extern HotButton hotbutton;
 
 void heltec_led(int percent);
 void heltec_ve(bool state);
