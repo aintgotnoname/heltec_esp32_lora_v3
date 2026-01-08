@@ -52,7 +52,7 @@ const uint8_t scaled_voltage[100] = {
   PrintSplitter both(Serial, display);
 #endif
 
-HotButton button(BUTTON);
+HotButton hotbutton(BUTTON);
 
 
 /**
@@ -170,10 +170,10 @@ void heltec_deep_sleep_prepare()
   pinMode(SDA_OLED, INPUT);
   pinMode(SCL_OLED, INPUT);
   pinMode(RST_OLED, INPUT);
-  // Set button wakeup if applicable
+  // Set hotbutton wakeup if applicable
   #ifdef HELTEC_POWER_BUTTON
     esp_sleep_enable_ext0_wakeup(BUTTON, LOW);
-    button.waitForRelease();
+    hotbutton.waitForRelease();
   #endif
 }
 
@@ -358,13 +358,13 @@ void heltec_setup() {
  * @brief The main loop function for the Heltec library.
  *
  * This function should be called in loop() of the Arduino sketch. It updates
- * the state of the power button and implements long-press power off if used.
+ * the state of the power hotbutton and implements long-press power off if used.
  */
 void heltec_loop() {
-  button.update();
+  hotbutton.update();
   #ifdef HELTEC_POWER_BUTTON
-    // Power off button checking
-    if (button.pressedFor(1000)) {
+    // Power off hotbutton checking
+    if (hotbutton.pressedFor(1000)) {
       #ifndef HELTEC_NO_DISPLAY_INSTANCE
         // Visually confirm it's off so user releases button
         display.displayOff();
